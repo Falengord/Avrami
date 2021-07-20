@@ -58,12 +58,14 @@ def read_XRD(name, sep=" ", dtype="float", integrationTime=1):
 
 
 def pseudo_voigt(x, A, x0, gamma):
+    x = x.astype(np.float)
+    x0 = x0.astype(np.float)
     L = A * gamma / ((2 * np.pi) * ((x - x0) ** 2 + (gamma / 2) ** 2))
     G = (
         A
         * 2
         * np.sqrt(np.log(2))
-        * np.exp(-np.log(2) * (x - x0) ** 2 / gamma ** 2)
+        * np.exp(-np.log(2.) * (x - x0) ** 2. / gamma ** 2.)
         / (np.abs(gamma) * np.sqrt(np.pi))
     )
     eta = gaus0 + gaus1 * x
@@ -178,14 +180,14 @@ def Avrami(x, B, C, x0):
 #######################################################################################
 # Import Data
 Data = []
-Data.append(importdata("../685C/2teta abs_S18081A_685°C_", 1, 167))
-Data.append(importdata("../675_S18118_B/2teta abs_S18118 B_675°C_", 1, 304))
-Data.append(importdata("../700C/SecondPart/2teta abs_S16066B_700°C_", -11, 75))
-Data.append(importdata("../710C/2teta abs_S18081B_710°C_", 1, 175))
-Data.append(importdata("../720C/2teta abs_S18118 A_720°C_", 1, 175))
+Data.append(importdata("5/GIXRD abs_380°C_", 1, 99))
+Data.append(importdata("6/GIXRD abs_350°C_", 1, 99))
+Data.append(importdata("7/GIXRD abs_340°C_", 1, 80))
+Data.append(importdata("9/GIXRD abs_330°C_", 1, 99))
+#Data.append(importdata("../720C/2teta abs_S18118 A_720°C_", 1, 175))
 Data = np.array(Data, dtype=object)
 
-T_treat = [637, 644, 651, 659, 680]
+T_treat = [380, 350, 340, 330]
 T_label = [str(T) + " °C" for T in T_treat]
 T_treat = np.array(T_treat) + 273
 
@@ -210,17 +212,18 @@ for j, temperature in enumerate(tqdm(Data, desc="Peak fitting", colour="green"))
             colour="blue",
         )
     ):
-        sigma = np.sqrt(data[:, 1])
+        sigma = (data[:, 1]) ** 0.5
         if Graphs or Gn == i or Tgraph:
             plt.errorbar(data[:, 0], data[:, 1], linewidth=0.5, yerr=sigma)
+            #plt.show()
 
         # peak curve fitting
         _poptg, _pcovg = curve_fit(
             doublePV,
             data[:, 0],
-            data[:, 1],
-            p0=[50, 23, 0.19, -0.01, 10],
-            bounds=[[0, 22.8, 0.1, -10, -10], [1e5, 23.2, 0.7, 10, 500]],
+            data[:, 1], #doublePV(x, A, x0, gamma, a, b)
+            p0=[25, 25.2, 0.19, -0.01, 10],  
+            bounds=[[0, 25.0, 0.1, -10, -10], [1e5, 25.4, 0.7, 10, 500]],
         )
         chig = chisquare(data[:, 1] / sigma, doublePV(data[:, 0], *_poptg) / (sigma), 5)
         redcg = chig[0] / (len(data[:, 1]) - 5)
@@ -300,7 +303,7 @@ for j, temperature in enumerate(tqdm(Data, desc="Peak fitting", colour="green"))
         if Graphs or Gn == i:
             plt.xlabel("$2\\theta$ (deg)")
             plt.ylabel("Intensity (a.u.)")
-            #plt.legend()
+            plt.legend()
             plt.savefig("Fit.png")
             plt.show()
 
@@ -339,7 +342,7 @@ if FullAvrami:
         subt = t[minA * maxA]
 
         # plt.plot(subt, subtemp[:,0])
-        p, c = curve_fit(Avrami, subt, subtemp[:, 0] / maxsT[j], p0=[1, 0.8, 1])
+        p, c = curve_fit(Avrami, subt, subtemp[:, 0] / maxsT[j], p0=[25.2, 25.0, 25.4])
         P.append(p)
         C.append(c)
         # print(p)
@@ -363,26 +366,27 @@ if FullAvrami:
 # log t vs Avrami transformation
 P1 = []
 P2 = []
-m1 = [30, 25, 12, 6, 1]
-m2 = [55, 50, 20, 15, 4]
-m3 = [70, 60, 30, 25, 6]
-m4 = [100, 120, 50, 70, 30]
+m1 = [70, 25, 12, 6, 1]
+m2 = [100, 50, 20, 15, 4]
+m3 = [110, 60, 30, 25, 6]
+m4 = [90, 120, 50, 70, 30]
+
 if lt_vs_A:
     for j, temp in enumerate(
         tqdm(Popt, desc="log t vs Avrami transformation", colour="green")
-    ):
+    ):        
         t = 18 * np.array(range(len(temp))) + 4
         t = t * 60
         A_t = -np.log(1 - temp[:, 0] / (max(temp[:, 0] + 0.1)))
         A = np.log(A_t)
         lt = np.log(t)
         plt.plot(lt, A, label=T_label[j])
-        p1, c1 = curve_fit(linear, lt[m1[j] : m2[j]], A[m1[j] : m2[j]])
-        plt.plot(lt[m1[j] : m2[j]], linear(lt[m1[j] : m2[j]], *p1), "k--")
-        P1.append(p1[1])  # /p1[0])
-        p2, c2 = curve_fit(linear, lt[m3[j] : m4[j]], A[m3[j] : m4[j]])
-        plt.plot(lt[m3[j] : m4[j]], linear(lt[m3[j] : m4[j]], *p2), "k--")
-        P2.append(p2[1])  # /p2[0])
+        #p1, c1 = curve_fit(linear, lt[m1[j] : m2[j]], A[m1[j] : m2[j]])
+        #plt.plot(lt[m1[j] : m2[j]], linear(lt[m1[j] : m2[j]], *p1), "k--")
+        #P1.append(p1[1])  # /p1[0])
+        #p2, c2 = curve_fit(linear, lt[m3[j] : m4[j]], A[m3[j] : m4[j]])
+        #plt.plot(lt[m3[j] : m4[j]], linear(lt[m3[j] : m4[j]], *p2), "k--")
+        #P2.append(p2[1])  # /p2[0])
     plt.xlabel("ln(t)")
     plt.ylabel("ln(-ln(1-x))")
     # plt.savefig("ln_t_vs_ln_A.png")
