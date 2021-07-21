@@ -65,7 +65,7 @@ def pseudo_voigt(x, A, x0, gamma):
         A
         * 2
         * np.sqrt(np.log(2))
-        * np.exp(-np.log(2.) * (x - x0) ** 2. / gamma ** 2.)
+        * np.exp(-np.log(2.0) * (x - x0) ** 2.0 / gamma ** 2.0)
         / (np.abs(gamma) * np.sqrt(np.pi))
     )
     eta = gaus0 + gaus1 * x
@@ -180,11 +180,11 @@ def Avrami(x, B, C, x0):
 #######################################################################################
 # Import Data
 Data = []
-Data.append(importdata("5/GIXRD abs_380°C_", 1, 99))
-Data.append(importdata("6/GIXRD abs_350°C_", 1, 99))
-Data.append(importdata("7/GIXRD abs_340°C_", 1, 80))
-Data.append(importdata("9/GIXRD abs_330°C_", 1, 99))
-#Data.append(importdata("../720C/2teta abs_S18118 A_720°C_", 1, 175))
+Data.append(importdata("./5/GIXRD abs_380°C_", 1, 99))
+Data.append(importdata("./6/GIXRD abs_350°C_", 1, 99))
+Data.append(importdata("./7/GIXRD abs_340°C_", 1, 80))
+Data.append(importdata("./9/GIXRD abs_330°C_", 1, 99))
+# Data.append(importdata("../720C/2teta abs_S18118 A_720°C_", 1, 175))
 Data = np.array(Data, dtype=object)
 
 T_treat = [380, 350, 340, 330]
@@ -215,22 +215,22 @@ for j, temperature in enumerate(tqdm(Data, desc="Peak fitting", colour="green"))
         sigma = (data[:, 1]) ** 0.5
         if Graphs or Gn == i or Tgraph:
             plt.errorbar(data[:, 0], data[:, 1], linewidth=0.5, yerr=sigma)
-            #plt.show()
+            # plt.show()
 
         # peak curve fitting
         _poptg, _pcovg = curve_fit(
             doublePV,
             data[:, 0],
-            data[:, 1], #doublePV(x, A, x0, gamma, a, b)
-            p0=[25, 25.2, 0.19, -0.01, 10],  
+            data[:, 1],  # doublePV(x, A, x0, gamma, a, b)
+            p0=[25, 25.2, 0.19, -0.01, 10],
             bounds=[[0, 25.0, 0.1, -10, -10], [1e5, 25.4, 0.7, 10, 500]],
         )
-        chig = chisquare(data[:, 1] / sigma, doublePV(data[:, 0], *_poptg) / (sigma), 5)
+        chig = chisquare((data[:, 1] - doublePV(data[:, 0], *_poptg)) / (sigma), ddof=5)
         redcg = chig[0] / (len(data[:, 1]) - 5)
 
         # no peak curve fitting
         _poptl, _pcovl = curve_fit(linear, data[:, 0], data[:, 1], p0=[-0.1, 30])
-        chil = chisquare(data[:, 1] / sigma, linear(data[:, 0], *_poptl) / (sigma), 2)
+        chil = chisquare((data[:, 1] - linear(data[:, 0], *_poptl)) / (sigma), ddof=2)
         redcl = chil[0] / (len(data[:, 1]) - 2)
 
         # Best fit choice
@@ -374,19 +374,19 @@ m4 = [90, 120, 50, 70, 30]
 if lt_vs_A:
     for j, temp in enumerate(
         tqdm(Popt, desc="log t vs Avrami transformation", colour="green")
-    ):        
+    ):
         t = 18 * np.array(range(len(temp))) + 4
         t = t * 60
         A_t = -np.log(1 - temp[:, 0] / (max(temp[:, 0] + 0.1)))
         A = np.log(A_t)
         lt = np.log(t)
         plt.plot(lt, A, label=T_label[j])
-        #p1, c1 = curve_fit(linear, lt[m1[j] : m2[j]], A[m1[j] : m2[j]])
-        #plt.plot(lt[m1[j] : m2[j]], linear(lt[m1[j] : m2[j]], *p1), "k--")
-        #P1.append(p1[1])  # /p1[0])
-        #p2, c2 = curve_fit(linear, lt[m3[j] : m4[j]], A[m3[j] : m4[j]])
-        #plt.plot(lt[m3[j] : m4[j]], linear(lt[m3[j] : m4[j]], *p2), "k--")
-        #P2.append(p2[1])  # /p2[0])
+        # p1, c1 = curve_fit(linear, lt[m1[j] : m2[j]], A[m1[j] : m2[j]])
+        # plt.plot(lt[m1[j] : m2[j]], linear(lt[m1[j] : m2[j]], *p1), "k--")
+        # P1.append(p1[1])  # /p1[0])
+        # p2, c2 = curve_fit(linear, lt[m3[j] : m4[j]], A[m3[j] : m4[j]])
+        # plt.plot(lt[m3[j] : m4[j]], linear(lt[m3[j] : m4[j]], *p2), "k--")
+        # P2.append(p2[1])  # /p2[0])
     plt.xlabel("ln(t)")
     plt.ylabel("ln(-ln(1-x))")
     # plt.savefig("ln_t_vs_ln_A.png")
